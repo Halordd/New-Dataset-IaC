@@ -1,0 +1,12 @@
+{
+  "normal_rows": 40,
+  "anomaly_rows": 40,
+  "num_features": 18,
+  "model": "isolation_forest",
+  "roc_auc": 0.5275,
+  "average_precision": 0.5301313152293174,
+  "precision_at_k": 0.5,
+  "k": 4,
+  "suggested_threshold_for_reporting": 0.35609699960800584,
+  "notes": "Train uses normal only. Anomaly labels are used only for evaluation."
+}

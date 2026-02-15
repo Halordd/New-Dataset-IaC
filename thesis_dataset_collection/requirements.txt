@@ -1,2 +1,7 @@
-# This project uses only Python standard library modules.
-# No pip packages are required for crawl_filter_cli.py.
+# Base crawl/filter scripts use only the Python standard library.
+# The analysis/training scripts require the packages below.
+numpy
+pandas
+scikit-learn
+matplotlib
+seaborn

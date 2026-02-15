@@ -87,3 +87,29 @@ python thesis_dataset_collection/build_context_dataset.py --input-ndjson thesis_
 ```bash
 python thesis_dataset_collection/generate_context_anomalies.py --input-csv thesis_dataset_collection/output/context_dataset.csv --per-sample 1 --output-ndjson thesis_dataset_collection/output/context_anomaly_dataset.ndjson
 ```
+
+## Experiments pipeline (sanity + clustering + model)
+
+1. Sanity check + plots:
+
+```bash
+python thesis_dataset_collection/sanity_check.py --input-csv thesis_dataset_collection/output/context_dataset.csv --out-dir thesis_dataset_collection/output/sanity
+```
+
+2. Context formation (clustering on features):
+
+```bash
+python thesis_dataset_collection/context_clustering.py --input-csv thesis_dataset_collection/output/context_dataset.csv --algo kmeans --k-min 4 --k-max 12 --output-csv thesis_dataset_collection/output/context_clustered.csv --output-metrics thesis_dataset_collection/output/clustering_metrics.json
+```
+
+3. Train unsupervised anomaly detector (train normal only, evaluate with anomalies):
+
+```bash
+python thesis_dataset_collection/train_eval_unsupervised.py --normal-csv thesis_dataset_collection/output/context_dataset.csv --anomaly-ndjson thesis_dataset_collection/output/context_anomaly_dataset.ndjson --out-dir thesis_dataset_collection/output/experiments
+```
+
+4. Generate a concise Markdown report:
+
+```bash
+python thesis_dataset_collection/report_generator.py --out-md thesis_dataset_collection/output/reports/experiment_report.md
+```

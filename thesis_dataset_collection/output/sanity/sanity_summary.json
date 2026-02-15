@@ -1,0 +1,8 @@
+{
+  "rows": 40,
+  "num_features": 18,
+  "input_csv": "thesis_dataset_collection\\output\\context_dataset.csv",
+  "outputs": {
+    "feature_stats_csv": "thesis_dataset_collection\\output\\sanity\\feature_stats.csv"
+  }
+}
