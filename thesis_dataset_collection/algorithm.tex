@@ -1,0 +1,60 @@
+\section{Dataset Collection and Validation Algorithm}
+\label{sec:dataset_collection_algorithm}
+
+\begin{algorithm}[t]
+\caption{Terraform GitHub Crawl and Multi-Layer Filtering}
+\label{alg:terraform_crawl_filter}
+\begin{algorithmic}[1]
+\Require Search keywords $K$, thresholds $T$, exclusion keywords $E$, outlier threshold $\tau$
+\Ensure Clean dataset $D$ of valid Terraform projects
+
+\State $R \gets \textsc{SearchGitHubRepositories}(K \cup \{\texttt{language:HCL}\})$
+\State $D \gets [\ ]$
+\State $\mathcal{F} \gets [\ ]$ \Comment{Used to build reference feature distribution}
+
+\ForAll{$repo \in R$}
+    \If{$\textsc{KeywordExclusion}(repo, E)$}
+        \State \textbf{continue}
+    \EndIf
+    \If{\textbf{not} $\textsc{RepoMeetsMaturity}(repo, T)$}
+        \State \textbf{continue}
+    \EndIf
+
+    \State $tf \gets \textsc{ExtractTerraformFiles}(repo)$
+    \If{$|tf| = 0$}
+        \State \textbf{continue}
+    \EndIf
+
+    \If{\textbf{not} $\textsc{ValidateTerraform}(tf)$}
+        \State \textbf{continue}
+    \EndIf
+    \If{\textbf{not} $\textsc{StructuralCheck}(tf)$}
+        \State \textbf{continue}
+    \EndIf
+
+    \State $x \gets \textsc{IaCFeatureExtractor}(tf)$
+    \State Append $x$ to $\mathcal{F}$
+    \State Append $(repo, tf, x)$ to provisional set $D$
+\EndFor
+
+\State $\mathcal{P} \gets \textsc{EstimateReferenceDistribution}(\mathcal{F})$
+\State $D_{final} \gets [\ ]$
+\ForAll{$(repo, tf, x) \in D$}
+    \State $s \gets \textsc{AnomalyScore}(x, \mathcal{P})$
+    \If{$s \leq \tau$}
+        \State Append $(repo, tf, x, \texttt{source="github"})$ to $D_{final}$
+    \EndIf
+\EndFor
+
+\State \Return $D_{final}$
+\end{algorithmic}
+\end{algorithm}
+
+\paragraph{Recommended maturity thresholds.}
+In this study, we use: minimum stars $\ge 10$, minimum forks $\ge 5$, last commit age $\le 24$ months, and README required.
+
+\paragraph{Validation policy.}
+Only projects that pass Terraform syntax and semantic checks (e.g., \texttt{terraform init -backend=false} and \texttt{terraform validate}) are retained.
+
+\paragraph{Behavioral filtering rationale.}
+Outlier exclusion is based on deployment-behavior feature distributions derived from the crawled corpus, reducing atypical configurations that may degrade model generalization.
