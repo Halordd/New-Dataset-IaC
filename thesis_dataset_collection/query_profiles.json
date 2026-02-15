@@ -1,0 +1,41 @@
+{
+  "version": "1.0",
+  "description": "Query presets to improve context coverage diversity.",
+  "profiles": [
+    {
+      "profile_id": "Q1",
+      "target_contexts": ["C1", "C2"],
+      "keywords": ["terraform", "aws", "aws_instance", "aws_security_group"]
+    },
+    {
+      "profile_id": "Q2",
+      "target_contexts": ["C3"],
+      "keywords": ["terraform", "aws", "aws_lambda_function", "aws_s3_bucket"]
+    },
+    {
+      "profile_id": "Q3",
+      "target_contexts": ["C4"],
+      "keywords": ["terraform", "aws", "aws_s3_bucket", "block_public_access"]
+    },
+    {
+      "profile_id": "Q4",
+      "target_contexts": ["C5"],
+      "keywords": ["terraform", "aws", "aws_db_instance", "subnet_group"]
+    },
+    {
+      "profile_id": "Q5",
+      "target_contexts": ["C6"],
+      "keywords": ["terraform", "aws", "aws_iam_role", "aws_iam_policy"]
+    },
+    {
+      "profile_id": "Q6",
+      "target_contexts": ["C7"],
+      "keywords": ["terraform", "aws", "aws_instance", "aws_db_instance", "aws_s3_bucket"]
+    },
+    {
+      "profile_id": "Q7",
+      "target_contexts": ["C8"],
+      "keywords": ["terraform", "aws", "least privilege", "private subnet"]
+    }
+  ]
+}

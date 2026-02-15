@@ -22,6 +22,7 @@ import statistics
 import subprocess
 import tempfile
 import time
+import re
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -32,6 +33,12 @@ from urllib.request import Request, urlopen
 
 
 LOG = logging.getLogger("crawl_filter")
+
+
+class RateLimitError(RuntimeError):
+    def __init__(self, wait_seconds: int) -> None:
+        super().__init__(f"GitHub API rate limit exceeded. Retry after {wait_seconds}s.")
+        self.wait_seconds = wait_seconds
 
 
 @dataclass
@@ -108,9 +115,9 @@ class GitHubClient:
                 reset = exc.headers.get("X-RateLimit-Reset")
                 if reset and reset.isdigit():
                     wait_seconds = max(0, int(reset) - int(time.time()))
-                    raise RuntimeError(
-                        f"GitHub API rate limit exceeded. Retry after {wait_seconds}s."
-                    ) from exc
+                    raise RateLimitError(wait_seconds) from exc
+                detail = exc.read().decode("utf-8", errors="ignore")
+                raise RuntimeError(f"GitHub API 403 at {url}: {detail}") from exc
             if exc.code == 404:
                 return None
             detail = exc.read().decode("utf-8", errors="ignore")
@@ -329,14 +336,45 @@ def structural_check(tf_files: List[TerraformFile]) -> bool:
 
 def extract_features(tf_files: List[TerraformFile]) -> Dict[str, float]:
     joined = "\n".join(tf.content for tf in tf_files)
+    lower = joined.lower()
+
+    def token_count(token: str) -> float:
+        return float(lower.count(token))
+
+    # Lightweight behavior signals derived from IaC text, still feature-based (no code storage).
+    open_ingress_count = len(
+        re.findall(
+            r"cidr_blocks\s*=\s*\[[^\]]*(0\.0\.0\.0/0|::/0)[^\]]*\]",
+            lower,
+            flags=re.MULTILINE,
+        )
+    )
+    public_ip_signals = (
+        lower.count("associate_public_ip_address")
+        + lower.count("map_public_ip_on_launch")
+        + lower.count("publicly_accessible")
+    )
+    private_subnet_signals = lower.count("private_subnet") + lower.count("subnet_type")
+
     return {
         "num_files": float(len(tf_files)),
-        "num_resources": float(joined.count('resource "')),
-        "num_modules": float(joined.count('module "')),
-        "num_variables": float(joined.count('variable "')),
-        "num_outputs": float(joined.count('output "')),
-        "num_data_blocks": float(joined.count('data "')),
-        "aws_token_count": float(joined.count("aws_")),
+        "num_resources": float(lower.count('resource "')),
+        "num_modules": float(lower.count('module "')),
+        "num_variables": float(lower.count('variable "')),
+        "num_outputs": float(lower.count('output "')),
+        "num_data_blocks": float(lower.count('data "')),
+        "aws_token_count": token_count("aws_"),
+        "ec2_count": token_count("aws_instance"),
+        "security_group_count": token_count("aws_security_group"),
+        "iam_count": token_count("aws_iam_"),
+        "s3_count": token_count("aws_s3_bucket"),
+        "rds_count": token_count("aws_db_instance") + token_count("aws_rds_"),
+        "lambda_count": token_count("aws_lambda_function"),
+        "vpc_count": token_count("aws_vpc"),
+        "subnet_count": token_count("aws_subnet"),
+        "public_ingress_count": float(open_ingress_count),
+        "public_ip_signal_count": float(public_ip_signals),
+        "private_network_signal_count": float(private_subnet_signals),
     }
 
 
@@ -415,41 +453,50 @@ def collect_terraform_dataset(
 
     for repo in repos:
         cand = Candidate(repo=repo)
-        if keyword_exclusion(repo, forbidden_keywords):
-            cand.keyword_exclusion_pass = False
-            cand.reject_reason = "keyword_exclusion"
-            continue
-        cand.keyword_exclusion_pass = True
-
-        if not repo_meets_maturity(repo, thresholds):
-            cand.maturity_pass = False
-            cand.reject_reason = "maturity_failed"
-            continue
-        cand.maturity_pass = True
-
-        tf_files = extract_tf_files(client, repo, max_tf_files=max_tf_files)
-        if not tf_files:
-            cand.reject_reason = "no_tf_files"
-            continue
-        if dry_run:
-            cand.syntax_pass = True
-        else:
-            if not validate_terraform(tf_files, terraform_bin=terraform_bin, timeout_sec=terraform_timeout_sec):
-                cand.syntax_pass = False
-                cand.reject_reason = "terraform_validate_failed"
+        try:
+            if keyword_exclusion(repo, forbidden_keywords):
+                cand.keyword_exclusion_pass = False
+                cand.reject_reason = "keyword_exclusion"
                 continue
-            cand.syntax_pass = True
+            cand.keyword_exclusion_pass = True
 
-        if not structural_check(tf_files):
-            cand.structural_pass = False
-            cand.reject_reason = "structural_failed"
+            if not repo_meets_maturity(repo, thresholds):
+                cand.maturity_pass = False
+                cand.reject_reason = "maturity_failed"
+                continue
+            cand.maturity_pass = True
+
+            tf_files = extract_tf_files(client, repo, max_tf_files=max_tf_files)
+            if not tf_files:
+                cand.reject_reason = "no_tf_files"
+                continue
+            if dry_run:
+                cand.syntax_pass = True
+            else:
+                if not validate_terraform(tf_files, terraform_bin=terraform_bin, timeout_sec=terraform_timeout_sec):
+                    cand.syntax_pass = False
+                    cand.reject_reason = "terraform_validate_failed"
+                    continue
+                cand.syntax_pass = True
+
+            if not structural_check(tf_files):
+                cand.structural_pass = False
+                cand.reject_reason = "structural_failed"
+                continue
+            cand.structural_pass = True
+
+            features = extract_features(tf_files)
+            cand.terraform_files = tf_files
+            cand.feature_vector = features
+            provisional.append(cand)
+        except RateLimitError as exc:
+            LOG.warning("Rate limit hit while processing %s. Retry after %ss.", repo.full_name, exc.wait_seconds)
+            cand.reject_reason = "github_rate_limited"
             continue
-        cand.structural_pass = True
-
-        features = extract_features(tf_files)
-        cand.terraform_files = tf_files
-        cand.feature_vector = features
-        provisional.append(cand)
+        except RuntimeError as exc:
+            LOG.warning("Skipping %s due to API/runtime error: %s", repo.full_name, exc)
+            cand.reject_reason = "github_api_error"
+            continue
 
     ref_dist = estimate_reference_distribution([c.feature_vector for c in provisional])
     accepted: List[Candidate] = []
@@ -483,7 +530,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("--min-forks", type=int, default=5)
     p.add_argument("--max-age-months", type=int, default=24)
     p.add_argument("--outlier-threshold", type=float, default=3.0)
-    p.add_argument("--max-tf-files", type=int, default=200, help="Max .tf files per repository.")
+    p.add_argument("--max-tf-files", type=int, default=40, help="Max .tf files per repository.")
     p.add_argument(
         "--terraform-bin",
         default="terraform",

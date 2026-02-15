@@ -1,0 +1,116 @@
+{
+  "version": "1.0",
+  "description": "Behavioral context profiles for Terraform AWS deployments.",
+  "contexts": [
+    {
+      "context_id": "C1",
+      "name": "Public Compute Deployment",
+      "required_positive": ["ec2_count", "public_ip_signal_count"],
+      "preferred_positive": ["security_group_count"],
+      "preferred_negative": ["public_ingress_count"],
+      "weights": {
+        "ec2_count": 3.0,
+        "public_ip_signal_count": 3.0,
+        "security_group_count": 1.5,
+        "public_ingress_count": -2.0,
+        "iam_count": 0.5
+      }
+    },
+    {
+      "context_id": "C2",
+      "name": "Private Compute Deployment",
+      "required_positive": ["ec2_count", "private_network_signal_count"],
+      "preferred_positive": ["security_group_count"],
+      "preferred_negative": ["public_ip_signal_count", "public_ingress_count"],
+      "weights": {
+        "ec2_count": 3.0,
+        "private_network_signal_count": 3.0,
+        "security_group_count": 1.0,
+        "public_ip_signal_count": -2.5,
+        "public_ingress_count": -2.0
+      }
+    },
+    {
+      "context_id": "C3",
+      "name": "Serverless Application",
+      "required_positive": ["lambda_count", "s3_count"],
+      "preferred_positive": ["iam_count"],
+      "preferred_negative": ["public_ingress_count"],
+      "weights": {
+        "lambda_count": 3.0,
+        "s3_count": 2.0,
+        "iam_count": 1.0,
+        "ec2_count": -1.5,
+        "public_ingress_count": -2.0
+      }
+    },
+    {
+      "context_id": "C4",
+      "name": "Storage-centric Deployment",
+      "required_positive": ["s3_count"],
+      "preferred_positive": ["iam_count"],
+      "preferred_negative": ["public_ingress_count"],
+      "weights": {
+        "s3_count": 3.5,
+        "iam_count": 1.0,
+        "ec2_count": -1.0,
+        "rds_count": -0.5,
+        "public_ingress_count": -2.0
+      }
+    },
+    {
+      "context_id": "C5",
+      "name": "Database Backend",
+      "required_positive": ["rds_count"],
+      "preferred_positive": ["security_group_count", "private_network_signal_count"],
+      "preferred_negative": ["public_ip_signal_count"],
+      "weights": {
+        "rds_count": 3.5,
+        "security_group_count": 1.5,
+        "private_network_signal_count": 2.0,
+        "public_ip_signal_count": -2.0,
+        "public_ingress_count": -2.0
+      }
+    },
+    {
+      "context_id": "C6",
+      "name": "IAM-heavy Deployment",
+      "required_positive": ["iam_count"],
+      "preferred_positive": [],
+      "preferred_negative": [],
+      "weights": {
+        "iam_count": 4.0,
+        "ec2_count": -0.5,
+        "rds_count": -0.5,
+        "lambda_count": -0.5
+      }
+    },
+    {
+      "context_id": "C7",
+      "name": "Mixed Service Deployment",
+      "required_positive": ["ec2_count", "s3_count", "rds_count"],
+      "preferred_positive": ["iam_count", "security_group_count"],
+      "preferred_negative": [],
+      "weights": {
+        "ec2_count": 2.0,
+        "s3_count": 2.0,
+        "rds_count": 2.0,
+        "iam_count": 1.0,
+        "security_group_count": 1.0
+      }
+    },
+    {
+      "context_id": "C8",
+      "name": "Minimal Secure Deployment",
+      "required_positive": [],
+      "preferred_positive": [],
+      "preferred_negative": ["public_ip_signal_count", "public_ingress_count"],
+      "weights": {
+        "num_resources": -1.0,
+        "public_ip_signal_count": -2.5,
+        "public_ingress_count": -2.5,
+        "iam_count": 0.5
+      }
+    }
+  ]
+}
