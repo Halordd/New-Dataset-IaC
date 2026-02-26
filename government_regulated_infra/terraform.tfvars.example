@@ -1,0 +1,11 @@
+aws_region                  = "ap-southeast-1"
+project_name                = "gov-regulated-iac"
+environment                 = "dev"
+raw_bucket_name             = "your-gov-data-raw-bucket-unique"
+cleaned_bucket_name         = "your-gov-data-cleaned-bucket-unique"
+curated_bucket_name         = "your-gov-data-curated-bucket-unique"
+cloudtrail_logs_bucket_name = "your-gov-cloudtrail-logs-bucket-unique"
+alert_email                 = "you@example.com"
+enable_cloudtrail_data_events = true
+kms_deletion_window_in_days = 30
+enable_quicksight_namespace = false
