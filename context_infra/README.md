@@ -13,6 +13,12 @@ Thư mục này chứa Terraform để dựng hạ tầng ngữ cảnh theo sơ 
 9. Glue crawler + Data Catalog cho dữ liệu trong S3  
 10. Athena + Managed Grafana để phân tích/quan sát
 
+## Sơ đồ kiến trúc
+
+Ảnh kiến trúc được đặt trong thư mục `context_infra/picture`:
+
+![Architecture Diagram](./picture/architech.png)
+
 ## Thành phần được tạo
 
 - `aws_kinesis_stream` cho telemetry ingest
