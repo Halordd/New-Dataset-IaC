@@ -1,0 +1,9 @@
+aws_region            = "us-east-1"
+project_name          = "context-iac"
+environment           = "dev"
+data_lake_bucket_name = "s3-iac-dev-terraform-state-context"
+kinesis_shard_count   = 1
+alert_email           = "you@example.com"
+
+# Keep false if your organization has not enabled AWS IAM Identity Center.
+enable_managed_grafana = false
