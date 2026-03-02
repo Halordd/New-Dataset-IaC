@@ -65,6 +65,24 @@ python train_eval_unsupervised.py --normal-csv output/context_dataset.csv --anom
 python report_generator.py --out-md output/reports/experiment_report.md
 ```
 
+## III. Monitoring & Decision Support
+
+Dự án tích hợp Dashboard giám sát tương tác để phân tích hành vi IaC và hỗ trợ ra quyết định.
+
+### 1) Đồng bộ dữ liệu
+Sau khi chạy xong pipeline dataset, hãy chạy script cầu nối để cập nhật dữ liệu cho Dashboard:
+```bash
+python thesis_dataset_collection/data_adapter.py
+```
+
+### 2) Khởi chạy Dashboard
+```bash
+cd dashboard
+npm install
+npm run dev
+```
+Truy cập giao diện tại `http://localhost:5173` để quan sát bản đồ quỹ đạo (Orbit Map) và phân tích sai lệch (Drift Analysis).
+
 ## Ghi chú
 
 - Nhớ đổi tên S3 bucket trong file `terraform.tfvars` để đảm bảo unique toàn cục.
