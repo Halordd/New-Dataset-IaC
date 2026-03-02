@@ -1,0 +1,49 @@
+:root {
+  --bg-cream: #F5EDDC;
+  --text-black: #181818;
+  --accent-red: #802520;
+  --accent-gold: #BA8530;
+  --border-grey: rgba(0, 0, 0, 0.1);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--bg-cream);
+  color: var(--text-black);
+  overflow-x: hidden;
+}
+
+pre, code, .mono {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.4; }
+  50% { opacity: 1; }
+  100% { opacity: 0.4; }
+}
+
+.arc-dashboard {
+  animation: fadeIn 1s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Custom Scrollbar Rhine Lab Style */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(0,0,0,0.05);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--accent-red);
+}
